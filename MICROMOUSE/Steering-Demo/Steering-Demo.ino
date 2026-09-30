@@ -39,8 +39,8 @@ const int TURN_SPEED = 130;
 const int BANG_AMOUNT = 50;
 
 
-const float FRONT_STOP_CM = 8.0;
-const float SIDE_CLOSE_CM = 8.0;
+const float FRONT_STOP_CM = 6.0;
+const float SIDE_CLOSE_CM = 3.0;
 
 
 const int TURN_MS = 450;

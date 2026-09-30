@@ -14,12 +14,12 @@ const uint8_t PWMB = 9, BIN1 = 7, BIN2 = 8; // left motor
 const uint8_t STBY = 6;
 
 // encoders
-const uint8_t L_C1 = 11, L_C2 = 12; // left motor
-const uint8_t R_C1 = 2, R_C2 = 10; // right motor
+const uint8_t R_C1 = 2, R_C2 = 10;   // right motor
+const uint8_t L_C1 = 11, L_C2 = 12;  // left motor
 
 // ultrasonics
-const uint8_t L_TRIG = A2, L_ECHO = A3; // left ultrasonic
 const uint8_t R_TRIG = A0, R_ECHO = A1; // right ultrasonic
+const uint8_t L_TRIG = A2, L_ECHO = A3; // left ultrasonic
 
 volatile long leftCount = 0, rightCount = 0;
 // count motor encoders as they spin
@@ -42,12 +42,13 @@ void leftISR() {
   bool a = digitalRead(L_C1);
   bool b = digitalRead(L_C2);
 
+
   if (a != b)
     leftCount += 1;
   else
     leftCount += -1;
-
 }
+
 
 // flipped, so opposite for direction
 void rightISR() {
@@ -55,42 +56,47 @@ void rightISR() {
   bool b = digitalRead(R_C2);
 
   if (a != b)
-    leftCount += -1;
+    rightCount += -1;
   else
-    leftCount += 1;
-  
+    rightCount += 1;
 }
+
 
 
 // motor functions
 void setLeft(int speed) {
-  bool fwd = speed >= 0; // true if speed above 0
+  bool fwd = speed >=0; // true if speed above 0
   int mag = constrain(abs(speed), 0, 255);
+  if (fwd)
+    {
+      digitalWrite(BIN1, HIGH);
+      digitalWrite(BIN2, LOW);
+    }
+  else
+    {
+      digitalWrite(BIN1, LOW);
+      digitalWrite(BIN2, HIGH);
+    }
+    analogWrite(PWMB, mag);
 
-  if (fwd) {
-    digitalWrite(AIN1, HIGH);
-    digitalWrite(AIN2, LOW);
-  }
-  else {
-    digitalWrite(AIN1, LOW);
-    digitalWrite(AIN2, HIGH);
-  }
-  analogWrite(PWMA, mag);
 }
 
 void setRight(int speed) {
-  bool fwd = speed >= 0; // true if speed above 0
+  speed = -speed;
+  bool fwd = speed >=0;
   int mag = constrain(abs(speed), 0, 255);
+  if (fwd)
+    {
+      digitalWrite(AIN1, HIGH);
+      digitalWrite(AIN2, LOW);
+    }
+  else
+    {
+      digitalWrite(AIN1, LOW);
+      digitalWrite(AIN2, HIGH);
+    }
+    analogWrite(PWMA, mag);
 
-  if (fwd) {
-    digitalWrite(BIN1, HIGH);
-    digitalWrite(BIN2, LOW);
-  }
-  else {
-    digitalWrite(BIN1, LOW);
-    digitalWrite(BIN2, HIGH);
-  }
-  analogWrite(PWMB, mag);
 }
 
 void stopMotors() {
@@ -133,22 +139,16 @@ void setup() {
   delay(2000);
 
   // motor drivers
-  pinMode(PWMA, OUTPUT);
-  pinMode(AIN1, OUTPUT);
-  pinMode(AIN2, OUTPUT);
-  pinMode(PWMB, OUTPUT);
-  pinMode(BIN1, OUTPUT);
-  pinMode(BIN2, OUTPUT);
+  pinMode(PWMA, OUTPUT); pinMode(AIN1, OUTPUT); pinMode(AIN2, OUTPUT);
+  pinMode(PWMB, OUTPUT); pinMode(BIN1, OUTPUT); pinMode(BIN2, OUTPUT);
   pinMode(STBY, OUTPUT);
   digitalWrite(STBY, HIGH);
   stopMotors();
 
   // encoders
-  pinMode(L_C1, INPUT_PULLUP);
-  pinMode(L_C2, INPUT_PULLUP);
-  pinMode(R_C1, INPUT_PULLUP);
-  pinMode(R_C2, INPUT_PULLUP);
-  enableInterrupt(L_C1, leftISR, CHANGE);
+  pinMode(L_C1, INPUT_PULLUP); pinMode(L_C2, INPUT_PULLUP);
+  pinMode(R_C1, INPUT_PULLUP); pinMode(R_C2, INPUT_PULLUP);
+  enableInterrupt(L_C1, leftISR,  CHANGE);
   enableInterrupt(R_C1, rightISR, CHANGE);
 
   Wire.begin();
@@ -156,23 +156,29 @@ void setup() {
   delay(500);
 
   tof.setTimeout(500);
-  if (tof.init()){
+  if (tof.init())
+  {
     tof.setRangeTiming(50,0);
     tof.startContinuous();
   }
-  else{
+  else
+  {
     Serial.println("TOF Sensor not found");
   }
 
-  if (bno.begin()) {
+
+  if (bno.begin())
+  {
     delay(1000);
     bno.setExtCrystalUse(true);
   }
-  else {
+  else
+  {
     Serial.println("IMU Sensor not found");
   }
 
-  Serial.println("Starting in 3 seconds");
+
+  Serial.println("Starting program in 3 seconds.");
   Serial.println("ms,front_cm,left_cm,right_cm,heading,gyroz,encL,encR");
   delay(3000);
 }
@@ -182,8 +188,9 @@ void loop() {
   spinMotors(120);
   float front = readFrontCM();
   float left = readLeftCM();
-  delay(10);
+  delay(30);
   float right = readRightCM();
+
 
   float heading = 0;
   float gyroz = 0;
@@ -193,18 +200,21 @@ void loop() {
   imu::Vector<3> g = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
   gyroz = g.z();
 
+
   noInterrupts();
   long lc = leftCount, rc = rightCount;
   interrupts();
 
+
   Serial.print(millis());   Serial.print(',');
   Serial.print(front, 1);   Serial.print(',');
-  Serial.print(left, 1);   Serial.print(',');
+  Serial.print(left, 1);    Serial.print(',');
   Serial.print(right, 1);   Serial.print(',');
-  Serial.print(heading, 1);   Serial.print(',');
+  Serial.print(heading, 1); Serial.print(',');
   Serial.print(gyroz, 2);   Serial.print(',');
-  Serial.print(lc, 1);   Serial.print(',');
+  Serial.print(lc);         Serial.print(',');
   Serial.println(rc);
+
 
   delay(20);
 }
